@@ -1,11 +1,27 @@
 # -*- coding: utf-8 -*-
 import scrapy
+from scrapy_selenium import SeleniumRequest
+from selenium.webdriver.common.keys import Keys
+from scrapy.selector import Selector
 
 
 class ComputerdealsSpider(scrapy.Spider):
     name = 'computerdeals'
-    allowed_domains = ['slickdeals.net/computer-deals']
-    start_urls = ['http://slickdeals.net/computer-deals/']
+
+    def start_requests(self):
+        yield SeleniumRequest(
+            url="https://slickdeals.net/computer-deals/",
+            wait_time=3,
+            callback=self.parse
+        )
 
     def parse(self, response):
-        pass
+        products = response.xpath("//ul[@class='dealTiles categoryGridDeals']/li")
+
+        for product in products:
+            yield {
+                "name": product.xpath(".//a[@class='itemTitle bp-c-link']/text()").get(),
+                "link": product.xpath(".//a[@class='itemTitle bp-c-link']/@href").get(),
+                "store_name": product.xpath(".//button[@class='itemStore bp-p-storeLink bp-c-linkableButton bp-c-button--link  bp-c-button']/text()").get(),
+                "price": product.xpath("normalize-space(.//div[@class='itemPrice  wide ']/text())").get(),
+            }
